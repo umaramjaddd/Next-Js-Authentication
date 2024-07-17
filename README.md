@@ -14,4 +14,4 @@ pnpm dev
 bun dev
 ```
 
-You can use these APIs for any projet of yours for functionality of Login , SIgnup and Logout.
+A project made in Next js with TypeScript for type safety and ensuring code quality and Mongo DB for databse managment.You can use these APIs for any projet of yours for functionality of Login , SIgnup and Logout. This project includes password hashing using bcryptjs.
