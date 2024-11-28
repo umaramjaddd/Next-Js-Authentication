@@ -1,0 +1,86 @@
+import Connect from "@/src/lib/mongodb";
+import User from "@/src/Models/userModel";
+import { NextRequest, NextResponse } from "next/server";
+import bcryptjs from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { uploadBro } from "@/src/helpers/cloudinary_buffer";
+
+
+Connect();
+// Calls the connect function to establish a connection to the database.
+
+export async function POST(request: NextRequest) {
+  // Defines an asynchronous POST request handler.
+  try {
+    const formData = await request.formData();
+  const displayname = formData.get('displayname');
+  const email = formData.get('email');
+  const phone = formData.get('phone');
+  const password = formData.get('password');
+  const pic = formData.get('pic');
+
+    // const reqBody = await request.json();
+    // const { displayname, email, phone, password } = reqBody;
+    // Parses the request body to extract username, email, and password.
+    
+    //Checks if a user with the provided email already exists.
+    const user = await User.findOne({ email });
+
+    //If yes, returns a 400 response.
+    if (user) {
+      return NextResponse.json(
+        { error: "User already exists" },
+        { status: 400 }
+      );
+    }
+
+    var picture = await uploadBro(pic);
+    //hash password using bcryptjs.
+    const salt = await bcryptjs.genSalt(10);
+    const hashedPassword = await bcryptjs.hash(password, salt);
+
+
+
+    const newUser = new User({
+      displayname,
+      email,
+      profilePic: picture,
+      phone,
+      password: hashedPassword,
+    });
+
+    // Saves the new user to the database.
+    const savedUser = await newUser.save();
+
+    const tokenData = {
+      id: savedUser._id,
+      email,
+      username: displayname,
+    };
+
+    const token = await jwt.sign(tokenData, process.env.Secret_Key!, {
+      expiresIn: "1d",
+    });
+    const response = NextResponse.json({
+      Message: "Signuped in Successfully",
+      success: true,
+      savedUser,
+    });
+
+    response.cookies.set("jwttoken", token, {
+      httpsOnly: true,
+    });
+
+    return response;
+    // return NextResponse.json({
+    //     message: "User created successfully",
+    //     success: true,
+    //     savedUser
+    // })
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message, message: "buue" },
+      { status: 500 }
+    );
+  }
+}

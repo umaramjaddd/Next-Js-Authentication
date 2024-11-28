@@ -1,0 +1,36 @@
+import upload from "@/src/helpers/multer";
+import { uploadOnCloudinary } from "@/src/helpers/cloudinary";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const pic = formData.get("pic") as unknown as File;
+
+    // Check if the pic exists
+    if (pic) {
+      // Use the multer middleware to upload the pic
+      upload.single('pic')(request, null, async function (err) {
+        if (err) {
+          return NextResponse.json({ error: err.message });
+        } else {
+          // Access the uploaded file via request.file
+          const localFilePath = pic.path;
+
+          // Upload the file to cloudinary
+          const cloudinaryResponse = await uploadOnCloudinary(localFilePath);
+
+          // Return the cloudinary response
+          return NextResponse.json({ cloudinaryResponse, success: true });
+        }
+      });
+    } else {
+      return NextResponse.json({ error: "No file provided" });
+    }
+  } catch (error: any) {
+    return NextResponse.json({ error: error });
+  }
+
+  // Ensure a response is returned in all branches of the handler
+  return NextResponse.json({ error: "Unexpected error occurred" });
+}
